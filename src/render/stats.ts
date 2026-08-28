@@ -36,7 +36,12 @@ export function renderContextBar(ctx: RenderContext, options?: { showLabel?: boo
     ? colorize(`Context ${bar} ${pctStr}`, color)
     : colorize(`${bar} ${pctStr}`, color);
 
-  // Don't show (12k/1M) in context bar - only show percentage (like claude-hud)
+  // Show (12k/1M) token numbers after the bar when contextValues is enabled
+  if (display.contextValues && cw.currentInputTokens != null && cw.contextWindowSize != null) {
+    const current = formatTokenCount(cw.currentInputTokens);
+    const total = formatTokenCount(cw.contextWindowSize);
+    result += ` ${dim(`(${current}/${total})`)}`;
+  }
 
   return result;
 }
