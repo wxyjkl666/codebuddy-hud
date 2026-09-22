@@ -37,8 +37,9 @@ export function renderContextBar(ctx: RenderContext, options?: { showLabel?: boo
     : colorize(`${bar} ${pctStr}`, color);
 
   // Show (12k/1M) token numbers after the bar when contextValues is enabled
-  if (display.contextValues && cw.currentInputTokens != null && cw.contextWindowSize != null) {
-    const current = formatTokenCount(cw.currentInputTokens);
+  const currentTokens = cw.currentContextTokens ?? cw.currentInputTokens;
+  if (display.contextValues && currentTokens != null && cw.contextWindowSize != null) {
+    const current = formatTokenCount(currentTokens);
     const total = formatTokenCount(cw.contextWindowSize);
     result += ` ${dim(`(${current}/${total})`)}`;
   }
@@ -78,7 +79,8 @@ export function renderStatsLine(ctx: RenderContext, options?: { includeContext?:
     const cw = getContextWindow(stdin);
     if (cw.totalInputTokens != null || cw.totalOutputTokens != null) {
       const total = cw.totalInputTokens != null ? formatTokenCount(cw.totalInputTokens) : '0';
-      const inTok = cw.currentInputTokens != null ? formatTokenCount(cw.currentInputTokens) : '0';
+      const curIn = cw.currentContextTokens ?? cw.currentInputTokens;
+      const inTok = curIn != null ? formatTokenCount(curIn) : '0';
       const outTok = cw.currentOutputTokens != null ? formatTokenCount(cw.currentOutputTokens) : '0';
       segments.push(dim(`tok: ${total} (in: ${inTok}, out: ${outTok})`));
     }

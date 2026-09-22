@@ -20,6 +20,8 @@ function makeCtx(overrides?: Partial<{
   contextCritical: number;
   usedPercentage: number | null;
   currentInputTokens: number | null;
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
   contextWindowSize: number | null;
 }>): RenderContext {
   const o = {
@@ -51,7 +53,11 @@ function makeCtx(overrides?: Partial<{
       },
       context_window: o.usedPercentage != null ? {
         used_percentage: o.usedPercentage,
-        current_usage: o.currentInputTokens != null ? { input_tokens: o.currentInputTokens } : undefined,
+        current_usage: o.currentInputTokens != null ? {
+          input_tokens: o.currentInputTokens,
+          cache_creation_input_tokens: o.cacheCreationTokens,
+          cache_read_input_tokens: o.cacheReadTokens,
+        } : undefined,
         context_window_size: o.contextWindowSize ?? undefined,
       } : undefined,
     },
@@ -212,7 +218,7 @@ describe('renderStatsLine', () => {
     assert.ok(plain.includes('0%'));
   });
 
-  it('context bar shows only percentage (not token values)', () => {
+  it('context bar shows token values when contextValues enabled', () => {
     const ctx = makeCtx({
       contextUsage: true,
       contextValues: true,
@@ -224,8 +230,23 @@ describe('renderStatsLine', () => {
     assert.ok(line !== null);
     const plain = stripAnsi(line!);
     assert.ok(plain.includes('6%'));
-    // Context bar should NOT include token values (12k/1M)
-    assert.ok(!plain.includes('60.3k/1M'));
+    assert.ok(plain.includes('60.3k/1M'));
+  });
+
+  it('context 用量 = input + cache_creation + cache_read（input_tokens 为 0 时）', () => {
+    const ctx = makeCtx({
+      contextUsage: true,
+      contextValues: true,
+      usedPercentage: 10.42,
+      currentInputTokens: 0,
+      cacheCreationTokens: 381,
+      cacheReadTokens: 103808,
+      contextWindowSize: 1000000,
+    });
+    const line = renderStatsLine(ctx);
+    assert.ok(line !== null);
+    const plain = stripAnsi(line!);
+    assert.ok(plain.includes('104.2k/1M'));
   });
 
   it('context bar uses green for low usage', () => {

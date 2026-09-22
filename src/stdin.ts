@@ -70,6 +70,9 @@ export interface ContextWindowInfo {
   contextWindowSize: number | null;
   currentInputTokens: number | null;
   currentOutputTokens: number | null;
+  // 当前上下文实际占用的 token 数 = input_tokens + cache_creation + cache_read
+  // （新版 CLI 的 current_usage.input_tokens 恒为 0，真实用量都在 cache 字段里）
+  currentContextTokens: number | null;
   cacheCreationTokens: number | null;
   cacheReadTokens: number | null;
   usedPercentage: number | null;
@@ -78,14 +81,21 @@ export interface ContextWindowInfo {
 
 export function getContextWindow(stdin: Partial<StdinData>): ContextWindowInfo {
   const cw = stdin.context_window;
+  const currentUsage = cw?.current_usage;
+  const currentParts = [
+    currentUsage?.input_tokens,
+    currentUsage?.cache_creation_input_tokens,
+    currentUsage?.cache_read_input_tokens,
+  ].filter((v): v is number => typeof v === 'number');
   return {
     totalInputTokens: cw?.total_input_tokens ?? null,
     totalOutputTokens: cw?.total_output_tokens ?? null,
     contextWindowSize: cw?.context_window_size ?? null,
-    currentInputTokens: cw?.current_usage?.input_tokens ?? null,
-    currentOutputTokens: cw?.current_usage?.output_tokens ?? null,
-    cacheCreationTokens: cw?.current_usage?.cache_creation_input_tokens ?? null,
-    cacheReadTokens: cw?.current_usage?.cache_read_input_tokens ?? null,
+    currentInputTokens: currentUsage?.input_tokens ?? null,
+    currentOutputTokens: currentUsage?.output_tokens ?? null,
+    currentContextTokens: currentParts.length > 0 ? currentParts.reduce((a, b) => a + b, 0) : null,
+    cacheCreationTokens: currentUsage?.cache_creation_input_tokens ?? null,
+    cacheReadTokens: currentUsage?.cache_read_input_tokens ?? null,
     usedPercentage: cw?.used_percentage ?? null,
     remainingPercentage: cw?.remaining_percentage ?? null,
   };
